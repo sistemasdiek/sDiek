@@ -7,17 +7,26 @@ workflows:
       flutter: stable
       xcode: latest
       cocoapods: default
+      groups:
+        - apple_credentials # Configured in Codemagic UI if using Apple Developer Account
+      ios_signing:
+        distribution_type: ad_hoc
+        bundle_identifier: com.sistemasdiek.diekapp
     scripts:
       - name: Initialize platform files
         script: |
-          flutter create . --platforms=ios,android
+          flutter create . --platforms=ios,android --org com.sistemasdiek
       - name: Fetch Flutter dependencies
         script: |
           flutter packages pub get
-      - name: Build iOS Release Package
+      - name: Set up iOS signing profiles
         script: |
-          flutter build ipa --release --no-codesign
+          xcode-project use-profiles || echo "No code signing profiles found, building unsigned package"
+      - name: Build iOS Application
+        script: |
+          flutter build ios --release --no-codesign
     artifacts:
+      - build/ios/iphoneos/Runner.app
       - build/ios/ipa/*.ipa
       - /tmp/xcodebuild_logs/*.log
 
@@ -30,7 +39,7 @@ workflows:
     scripts:
       - name: Initialize platform files
         script: |
-          flutter create . --platforms=ios,android
+          flutter create . --platforms=ios,android --org com.sistemasdiek
       - name: Fetch Flutter dependencies
         script: |
           flutter packages pub get
