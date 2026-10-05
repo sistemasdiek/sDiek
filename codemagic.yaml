@@ -10,23 +10,27 @@ workflows:
     scripts:
       - name: Initialize platform files
         script: |
-          flutter create . --platforms=ios,android --org com.sistemasdiek
+          if [ ! -d "ios" ]; then
+            flutter create . --platforms=ios,android --org com.sistemasdiek
+          fi
       - name: Fetch Flutter dependencies
         script: |
           flutter packages pub get
-      - name: Build iOS Application (Unsigned Release)
+      - name: Install CocoaPods dependencies
         script: |
-          flutter build ios --release --no-codesign --config-only
-          cd ios
-          xcodebuild -workspace Runner.xcworkspace -scheme Runner -configuration Release -sdk iphoneos CODE_SIGNING_ALLOWED=NO CODE_SIGNING_REQUIRED=NO CODE_SIGN_IDENTITY=""
-          cd ..
+          cd ios && pod install
+      - name: Disable Xcode mandatory code signing check
+        script: |
+          xcode-project disable-code-signing --project ios/Runner.xcodeproj || true
+      - name: Build Full iOS Release App
+        script: |
+          flutter build ios --release --no-codesign
           mkdir -p build/ios/ipa/Payload
-          cp -r build/ios/iphoneos/Runner.app build/ios/ipa/Payload/ 2>/dev/null || cp -r build/ios/Release-iphoneos/Runner.app build/ios/ipa/Payload/ 2>/dev/null || true
+          cp -r build/ios/iphoneos/Runner.app build/ios/ipa/Payload/
           cd build/ios/ipa
-          zip -r DiekApp-unsigned.ipa Payload || true
+          zip -r DiekApp-Full-Release.ipa Payload
     artifacts:
       - build/ios/iphoneos/*.app
-      - build/ios/Release-iphoneos/*.app
       - build/ios/ipa/*.ipa
       - /tmp/xcodebuild_logs/*.log
 
@@ -39,7 +43,9 @@ workflows:
     scripts:
       - name: Initialize platform files
         script: |
-          flutter create . --platforms=ios,android --org com.sistemasdiek
+          if [ ! -d "android" ]; then
+            flutter create . --platforms=ios,android --org com.sistemasdiek
+          fi
       - name: Fetch Flutter dependencies
         script: |
           flutter packages pub get
