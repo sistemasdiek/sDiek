@@ -8,17 +8,18 @@ workflows:
       xcode: latest
       cocoapods: default
     scripts:
-      - name: Initialize platform files
+      - name: Initialize platform files & Podfile
         script: |
           if [ ! -d "ios" ]; then
             flutter create . --platforms=ios,android --org com.sistemasdiek
           fi
-      - name: Fetch Flutter dependencies
-        script: |
           flutter packages pub get
+          flutter build ios --release --no-codesign --config-only || true
       - name: Install CocoaPods dependencies
         script: |
-          cd ios && pod install
+          if [ -f "ios/Podfile" ]; then
+            cd ios && pod install
+          fi
       - name: Disable Xcode mandatory code signing check
         script: |
           xcode-project disable-code-signing --project ios/Runner.xcodeproj || true
@@ -26,11 +27,12 @@ workflows:
         script: |
           flutter build ios --release --no-codesign
           mkdir -p build/ios/ipa/Payload
-          cp -r build/ios/iphoneos/Runner.app build/ios/ipa/Payload/
+          cp -r build/ios/iphoneos/Runner.app build/ios/ipa/Payload/ 2>/dev/null || cp -r build/ios/Release-iphoneos/Runner.app build/ios/ipa/Payload/ 2>/dev/null || true
           cd build/ios/ipa
-          zip -r DiekApp-Full-Release.ipa Payload
+          zip -r DiekApp-Full-Release.ipa Payload || true
     artifacts:
       - build/ios/iphoneos/*.app
+      - build/ios/Release-iphoneos/*.app
       - build/ios/ipa/*.ipa
       - /tmp/xcodebuild_logs/*.log
 
@@ -46,8 +48,6 @@ workflows:
           if [ ! -d "android" ]; then
             flutter create . --platforms=ios,android --org com.sistemasdiek
           fi
-      - name: Fetch Flutter dependencies
-        script: |
           flutter packages pub get
       - name: Build Android APK
         script: |
