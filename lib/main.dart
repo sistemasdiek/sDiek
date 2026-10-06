@@ -10,6 +10,7 @@ import 'providers/giras_provider.dart';
 import 'providers/asistencia_provider.dart';
 import 'providers/plaza_pvr_provider.dart';
 import 'providers/theme_provider.dart';
+import 'providers/assets_provider.dart';
 import 'views/auth/login_screen.dart';
 import 'views/shell/main_navigation_shell.dart';
 
@@ -36,6 +37,7 @@ class DiekApp extends StatelessWidget {
         ChangeNotifierProvider(create: (_) => GirasProvider()),
         ChangeNotifierProvider(create: (_) => AsistenciaProvider()),
         ChangeNotifierProvider(create: (_) => PlazaPvrProvider()),
+        ChangeNotifierProvider(create: (_) => AssetsProvider()),
       ],
       child: Consumer2<AuthProvider, ThemeProvider>(
         builder: (context, authProvider, themeProvider, _) {

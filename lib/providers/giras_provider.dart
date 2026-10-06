@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
 import '../models/gira_model.dart';
+import '../core/services/supabase_service.dart';
 
 class GirasProvider extends ChangeNotifier {
+  final SupabaseService _supabaseService = SupabaseService();
   List<GiraModel> _giras = [];
   bool _isLoading = false;
 
@@ -9,49 +11,59 @@ class GirasProvider extends ChangeNotifier {
   bool get isLoading => _isLoading;
 
   GirasProvider() {
+    fetchGiras();
+  }
+
+  Future<void> fetchGiras() async {
+    _isLoading = true;
+    notifyListeners();
+
+    try {
+      if (_supabaseService.isReady) {
+        final List<dynamic> response = await _supabaseService.client
+            .from('giras')
+            .select('*, gira_incidencias(*)')
+            .order('created_at', ascending: false);
+
+        _giras = response.map((json) {
+          final incList = (json['gira_incidencias'] as List<dynamic>?)
+                  ?.map((i) => GiraIncidenciaModel.fromJson(i))
+                  .toList() ??
+              [];
+          return GiraModel.fromJson(json, incidencias: incList);
+        }).toList();
+
+        if (_giras.isNotEmpty) {
+          _isLoading = false;
+          notifyListeners();
+          return;
+        }
+      }
+    } catch (e) {
+      print('Error fetching giras from Supabase: $e');
+    }
+
     _loadSampleGiras();
+    _isLoading = false;
+    notifyListeners();
   }
 
-  void _loadSampleGiras() {
-    _giras = [
-      GiraModel(
-        id: 'gira-101',
-        numero: 'GIRA-2026-041',
-        numRemision: 'REM-9921',
-        ayudante: 'Roberto Gomez',
-        createdAt: DateTime.now().subtract(const Duration(hours: 4)),
-        estado: 'activa',
-        incidencias: [
-          GiraIncidenciaModel(
-            id: 'inc-1',
-            giraId: 'gira-101',
-            motorista: 'Juan Perez',
-            tipo: 'Tráfico San Pedro Sula',
-            descripcion: 'Retraso de 30 min por construcción en Bulevar del Norte.',
-            creadoEn: DateTime.now().subtract(const Duration(hours: 1)),
-          ),
-        ],
-      ),
-      GiraModel(
-        id: 'gira-102',
-        numero: 'GIRA-2026-042',
-        numRemision: 'REM-9925',
-        ayudante: 'Jose Martinez',
-        createdAt: DateTime.now().subtract(const Duration(hours: 6)),
-        estado: 'activa',
-      ),
-      GiraModel(
-        id: 'gira-103',
-        numero: 'GIRA-2026-039',
-        numRemision: 'REM-9880',
-        ayudante: 'Pedro Ramos',
-        createdAt: DateTime.now().subtract(const Duration(days: 1)),
-        estado: 'completada',
-      ),
-    ];
-  }
+  Future<void> addIncidencia(String giraId, String motorista, String tipo, String descripcion) async {
+    try {
+      if (_supabaseService.isReady) {
+        await _supabaseService.client.from('gira_incidencias').insert({
+          'gira_id': giraId,
+          'motorista': motorista,
+          'tipo': tipo,
+          'descripcion': descripcion,
+        });
+        await fetchGiras();
+        return;
+      }
+    } catch (e) {
+      print('Error adding incidencia: $e');
+    }
 
-  void addIncidencia(String giraId, String motorista, String tipo, String descripcion) {
     final index = _giras.indexWhere((g) => g.id == giraId);
     if (index != -1) {
       final nuevaIncidencia = GiraIncidenciaModel(

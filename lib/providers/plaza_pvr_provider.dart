@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
 import '../models/pvr_inquilino_model.dart';
+import '../core/services/supabase_service.dart';
 
 class PlazaPvrProvider extends ChangeNotifier {
+  final SupabaseService _supabaseService = SupabaseService();
   List<PvrInquilinoModel> _inquilinos = [];
   bool _isLoading = false;
 
@@ -13,47 +15,35 @@ class PlazaPvrProvider extends ChangeNotifier {
   double get totalMensualidad => _inquilinos.fold(0.0, (sum, i) => sum + i.totalMensual);
 
   PlazaPvrProvider() {
-    _loadSampleInquilinos();
+    fetchInquilinos();
   }
 
-  void _loadSampleInquilinos() {
-    _inquilinos = [
-      PvrInquilinoModel(
-        id: 'pvr-01',
-        numero: 101,
-        nombre: 'Farmacias Siman',
-        razonSocial: 'Comercial Siman Hn S.A.',
-        rtn: '08011995882190',
-        local: 'Local A-1 (Planta Baja)',
-        arrendamiento: 45000.0,
-        mantenimiento: 8500.0,
-        energiaDefault: 12000.0,
-        saldoInicial: 0.0,
-      ),
-      PvrInquilinoModel(
-        id: 'pvr-02',
-        numero: 102,
-        nombre: 'Expresso Americano',
-        razonSocial: 'Cafe Gourmet de Honduras',
-        rtn: '08011990443120',
-        local: 'Kiosco K-02',
-        arrendamiento: 28000.0,
-        mantenimiento: 4200.0,
-        energiaDefault: 6500.0,
-        saldoInicial: 0.0,
-      ),
-      PvrInquilinoModel(
-        id: 'pvr-03',
-        numero: 103,
-        nombre: 'Banco Ficohsa Agente Auto',
-        razonSocial: 'Grupo Financiero Ficohsa',
-        rtn: '08011994112098',
-        local: 'Local B-4',
-        arrendamiento: 62000.0,
-        mantenimiento: 11000.0,
-        energiaDefault: 15400.0,
-        saldoInicial: 0.0,
-      ),
-    ];
+  Future<void> fetchInquilinos() async {
+    _isLoading = true;
+    notifyListeners();
+
+    try {
+      if (_supabaseService.isReady) {
+        final List<dynamic> response = await _supabaseService.client
+            .from('pvr_inquilinos')
+            .select()
+            .eq('activo', true)
+            .order('numero', ascending: true);
+
+        _inquilinos = response.map((json) => PvrInquilinoModel.fromJson(json)).toList();
+
+        if (_inquilinos.isNotEmpty) {
+          _isLoading = false;
+          notifyListeners();
+          return;
+        }
+      }
+    } catch (e) {
+      print('Error fetching pvr_inquilinos from Supabase: $e');
+    }
+
+    _loadSampleInquilinos();
+    _isLoading = false;
+    notifyListeners();
   }
 }
