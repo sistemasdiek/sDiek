@@ -10,14 +10,10 @@ workflows:
       vars:
         CI: "true"
     scripts:
-      - name: Fetch Flutter packages & Generate iOS configuration
+      - name: Fetch Flutter packages
         script: |
           flutter precache --ios --suppress-analytics
           flutter packages pub get
-          flutter build ios --release --no-codesign --config-only --suppress-analytics || true
-      - name: Install CocoaPods
-        script: |
-          cd ios && pod install
       - name: Build iOS Application Package
         script: |
           flutter build ios --release --no-codesign --suppress-analytics
