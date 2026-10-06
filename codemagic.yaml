@@ -9,24 +9,20 @@ workflows:
       cocoapods: default
       vars:
         CI: "true"
-        NONINTERACTIVE: "1"
     scripts:
-      - name: Ensure iOS platform files exist
-        script: |
-          set -e
-          if [ ! -d "ios" ]; then
-            flutter create . --platforms=ios,android --org com.sistemasdiek --suppress-analytics
-          fi
       - name: Fetch Flutter packages
         script: |
           flutter packages pub get
-      - name: Build iOS App Release
+      - name: Install CocoaPods
+        script: |
+          cd ios && pod install
+      - name: Build iOS Application
         script: |
           flutter build ios --release --no-codesign --suppress-analytics
           mkdir -p build/ios/ipa/Payload
           cp -r build/ios/iphoneos/Runner.app build/ios/ipa/Payload/ 2>/dev/null || cp -r build/ios/Release-iphoneos/Runner.app build/ios/ipa/Payload/ 2>/dev/null || true
           cd build/ios/ipa
-          zip -r -q DiekApp-Release.ipa Payload || true
+          zip -r -q DiekApp-Full-Release.ipa Payload || true
     artifacts:
       - build/ios/iphoneos/*.app
       - build/ios/Release-iphoneos/*.app
@@ -42,12 +38,6 @@ workflows:
       vars:
         CI: "true"
     scripts:
-      - name: Ensure Android platform files exist
-        script: |
-          set -e
-          if [ ! -d "android" ]; then
-            flutter create . --platforms=ios,android --org com.sistemasdiek --suppress-analytics
-          fi
       - name: Fetch Flutter packages
         script: |
           flutter packages pub get
