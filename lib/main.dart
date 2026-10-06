@@ -9,6 +9,7 @@ import 'providers/cotizaciones_provider.dart';
 import 'providers/giras_provider.dart';
 import 'providers/asistencia_provider.dart';
 import 'providers/plaza_pvr_provider.dart';
+import 'providers/theme_provider.dart';
 import 'views/auth/login_screen.dart';
 import 'views/shell/main_navigation_shell.dart';
 
@@ -29,18 +30,19 @@ class DiekApp extends StatelessWidget {
     return MultiProvider(
       providers: [
         ChangeNotifierProvider(create: (_) => AuthProvider()),
+        ChangeNotifierProvider(create: (_) => ThemeProvider()),
         ChangeNotifierProvider(create: (_) => DashboardProvider()),
         ChangeNotifierProvider(create: (_) => CotizacionesProvider()),
         ChangeNotifierProvider(create: (_) => GirasProvider()),
         ChangeNotifierProvider(create: (_) => AsistenciaProvider()),
         ChangeNotifierProvider(create: (_) => PlazaPvrProvider()),
       ],
-      child: Consumer<AuthProvider>(
-        builder: (context, authProvider, _) {
+      child: Consumer2<AuthProvider, ThemeProvider>(
+        builder: (context, authProvider, themeProvider, _) {
           return MaterialApp(
             title: Env.appName,
             debugShowCheckedModeBanner: false,
-            themeMode: ThemeMode.dark, // SaaS / Startup Executive Dark Theme First
+            themeMode: themeProvider.themeMode,
             theme: AppTheme.lightTheme,
             darkTheme: AppTheme.darkTheme,
             home: authProvider.isAuthenticated
